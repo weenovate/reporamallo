@@ -1,6 +1,13 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
-import { getMeili, MEILI_INDEX } from '@/lib/search/client';
+import { ensureMeiliIndex, getMeili, MEILI_INDEX } from '@/lib/search/client';
+
+let indexEnsured = false;
+async function ensureOnce() {
+  if (indexEnsured) return;
+  await ensureMeiliIndex();
+  indexEnsured = true;
+}
 
 export async function buildDocumentRecord(documentId: string) {
   const doc = await prisma.document.findUnique({
@@ -32,6 +39,7 @@ export async function buildDocumentRecord(documentId: string) {
 export async function reindexDocument(documentId: string): Promise<void> {
   const meili = getMeili();
   if (!meili) return;
+  await ensureOnce();
   const record = await buildDocumentRecord(documentId);
   if (!record) {
     await removeFromIndex(documentId);
