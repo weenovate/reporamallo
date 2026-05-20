@@ -11,6 +11,8 @@ import { recordAudit } from '@/lib/audit/log';
 import { extractPdfText } from '@/lib/text/pdf';
 import { removeStored, storeBuffer } from '@/lib/storage/filesystem';
 import { reindexDocument, removeFromIndex } from '@/lib/search/indexer';
+import { buildExtract, extractTags } from '@/lib/nlp/extract';
+import { getSettings } from '@/lib/config/settings';
 
 const MAX_MB = parseInt(process.env.MAX_UPLOAD_SIZE_MB ?? '25', 10) || 25;
 
@@ -72,6 +74,10 @@ export async function createDocument(formData: FormData): Promise<ActionResult<{
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const contentText = await extractPdfText(buffer);
+  const settings = await getSettings();
+  const autoExtract = parsed.data.extract.trim() || buildExtract(contentText, settings.extractMaxChars);
+  const submittedTags = parseTags(parsed.data.tags);
+  const finalTags = submittedTags.length > 0 ? submittedTags : extractTags(contentText, settings.tagsDefaultCount);
 
   const id = createId();
   const stored = await storeBuffer(id, file.name, buffer);
@@ -82,7 +88,7 @@ export async function createDocument(formData: FormData): Promise<ActionResult<{
         data: {
           id,
           title: parsed.data.title,
-          extract: parsed.data.extract,
+          extract: autoExtract,
           contentText,
           contentDate: new Date(parsed.data.contentDate),
           fileName: file.name,
@@ -95,7 +101,7 @@ export async function createDocument(formData: FormData): Promise<ActionResult<{
           uploadedById: me.id,
         },
       });
-      await syncTags(created.id, parseTags(parsed.data.tags), tx);
+      await syncTags(created.id, finalTags, tx);
       await recordAudit(
         {
           actorId: me.id,

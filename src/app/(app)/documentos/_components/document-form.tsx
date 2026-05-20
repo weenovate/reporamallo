@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,10 @@ export function DocumentForm({ mode, defaults, entities }: Props) {
   const router = useRouter();
   const [entityId, setEntityId] = React.useState(defaults?.entityId ?? '');
   const [categoryId, setCategoryId] = React.useState(defaults?.categoryId ?? '');
+  const [extract, setExtract] = React.useState(defaults?.extract ?? '');
+  const [tags, setTags] = React.useState(defaults?.tags?.join(', ') ?? '');
+  const [file, setFile] = React.useState<File | null>(null);
+  const [analyzing, setAnalyzing] = React.useState(false);
   const [pending, start] = React.useTransition();
 
   React.useEffect(() => {
@@ -41,6 +46,33 @@ export function DocumentForm({ mode, defaults, entities }: Props) {
   }, [entityId, entities, categoryId]);
 
   const categories = entities.find((e) => e.id === entityId)?.categories ?? [];
+
+  async function analyze(f: File) {
+    setAnalyzing(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const res = await fetch('/api/documents/analyze', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const j = await res.json().catch(() => null);
+        throw new Error(j?.error ?? 'No se pudo analizar el PDF');
+      }
+      const data: { extract: string; tags: string[] } = await res.json();
+      setExtract(data.extract);
+      setTags(data.tags.join(', '));
+      toast.success('Extracto y tags sugeridos. Editalos si querés.');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Error al analizar el PDF');
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    setFile(f);
+    if (f) void analyze(f);
+  }
 
   return (
     <form
@@ -110,32 +142,57 @@ export function DocumentForm({ mode, defaults, entities }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="file">{mode === 'create' ? 'Archivo PDF' : 'Reemplazar archivo (opcional)'}</Label>
-          <Input id="file" name="file" type="file" accept="application/pdf" required={mode === 'create'} />
-          {defaults?.fileName && (
+          <Label htmlFor="file" className="flex items-center gap-2">
+            {mode === 'create' ? 'Archivo PDF' : 'Reemplazar archivo (opcional)'}
+            {analyzing && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Analizando…
+              </span>
+            )}
+          </Label>
+          <Input
+            id="file"
+            name="file"
+            type="file"
+            accept="application/pdf"
+            required={mode === 'create'}
+            onChange={onFileChange}
+          />
+          {!file && defaults?.fileName && (
             <p className="text-xs text-muted-foreground">Actual: {defaults.fileName}</p>
           )}
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="extract">Extracto</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="extract">Extracto</Label>
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Sparkles className="h-3 w-3" /> Auto-sugerido del PDF, editable
+            </span>
+          </div>
           <textarea
             id="extract"
             name="extract"
-            defaultValue={defaults?.extract ?? ''}
+            value={extract}
+            onChange={(e) => setExtract(e.target.value)}
             rows={4}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            placeholder="Primeros caracteres del documento. Se completará automáticamente al subir el archivo."
           />
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="tags">Tags</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="tags">Tags</Label>
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Sparkles className="h-3 w-3" /> Auto-sugeridos del PDF, separados por coma
+            </span>
+          </div>
           <Input
             id="tags"
             name="tags"
-            defaultValue={defaults?.tags?.join(', ') ?? ''}
-            placeholder="Separados por coma. Se sugerirán automáticamente al subir el archivo."
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="palabra1, palabra2, frase clave"
           />
         </div>
       </div>
@@ -144,7 +201,7 @@ export function DocumentForm({ mode, defaults, entities }: Props) {
         <Button asChild variant="outline" type="button">
           <Link href="/documentos">Cancelar</Link>
         </Button>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || analyzing}>
           {pending ? 'Guardando…' : mode === 'create' ? 'Crear documento' : 'Guardar cambios'}
         </Button>
       </div>
