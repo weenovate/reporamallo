@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,12 @@ type Props = {
 
 export function ProfileForm({ defaults }: Props) {
   const [state, formAction, isPending] = useActionState<ActionResult | null, FormData>(updateProfileAction, null);
+
+  useEffect(() => {
+    if (state?.ok) toast.success('Perfil actualizado');
+    else if (state && !state.ok) toast.error(state.error);
+  }, [state]);
+
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-2">
@@ -30,10 +37,8 @@ export function ProfileForm({ defaults }: Props) {
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" defaultValue={defaults.email} required />
       </div>
-      <div className="sm:col-span-2 flex items-center justify-between">
-        {state?.ok && <p className="text-sm text-primary">Guardado.</p>}
-        {state && !state.ok && <p className="text-sm text-destructive">{state.error}</p>}
-        <Button type="submit" disabled={isPending} className="ml-auto">
+      <div className="sm:col-span-2 flex justify-end">
+        <Button type="submit" disabled={isPending}>
           {isPending ? 'Guardando…' : 'Guardar cambios'}
         </Button>
       </div>
