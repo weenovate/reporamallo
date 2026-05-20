@@ -60,14 +60,29 @@ storage/           # archivos PDF subidos (no commiteado)
 ## Fases de desarrollo
 
 - [x] Fase 1 — Scaffolding (Next.js + Prisma + Tailwind + docker-compose)
-- [ ] Fase 2 — Modelo Prisma + migraciones + seed
-- [ ] Fase 3 — Auth + reset password
-- [ ] Fase 4 — Layout, navbar, theme switcher, toasts, confirm dialog
-- [ ] Fase 5 — CRUD Entidades y Categorías
-- [ ] Fase 6 — CRUD Documentos (sin NLP)
-- [ ] Fase 7 — NLP: extracto y tags automáticos
-- [ ] Fase 8 — Búsqueda Meilisearch
-- [ ] Fase 9 — Vista pública con filtros acumulativos en pills
-- [ ] Fase 10 — Usuarios + restauración soft-delete
-- [ ] Fase 11 — Panel de configuración
-- [ ] Fase 12 — Auditoría + guía de deploy en cPanel
+- [x] Fase 2 — Modelo Prisma + migración inicial + seed
+- [x] Fase 3 — Auth + reset password (Argon2id, sesiones opacas, Resend)
+- [x] Fase 4 — Layout, navbar, theme switcher (4 paletas), toasts, confirm dialog
+- [x] Fase 5 — CRUD Entidades y Categorías con soft delete
+- [x] Fase 6 — CRUD Documentos (filesystem + pdf-parse)
+- [x] Fase 7 — NLP local en español (extracto + tags automáticos)
+- [x] Fase 8 — Búsqueda Meilisearch (fallback MySQL FULLTEXT) + script de reindex
+- [x] Fase 9 — Vista pública (cards/lista) con pills acumulativas
+- [x] Fase 10 — Usuarios (admin) + papelera con restauración
+- [x] Fase 11 — Panel de configuración (admin)
+- [x] Fase 12 — Vista de auditoría (admin) + `DEPLOY.md` para Almalinux 9 + cPanel
+
+## Estructura del producto
+
+- `/` — vista pública, sin login. Cards o lista, filtros acumulativos en pills, paginación.
+- `/login` — login con usuario o email + "Olvidé mi contraseña".
+- `/documentos` — listado y CRUD (HU1-1, HU1-2).
+- `/documentos/nuevo`, `/documentos/[id]/editar` — alta/edición con análisis automático del PDF (HU1-3, HU1-4).
+- `/entidades` — administración de entidades y categorías (HU3-1 a HU3-3).
+- `/usuarios` — admin: alta, edición, baja, reset de contraseña (HU4-1).
+- `/papelera` — admin: restauración de entidades, categorías, documentos y usuarios soft-deleted.
+- `/configuracion` — admin: tags por defecto, máximo de caracteres del extracto, configuración Resend.
+- `/auditoria` — admin: log completo con filtros y before/after expandibles.
+- `/perfil` — datos personales + cambio de contraseña.
+
+Ver `DEPLOY.md` para la guía completa de instalación en VPS.
