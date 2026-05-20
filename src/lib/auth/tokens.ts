@@ -7,3 +7,7 @@ export function generateToken(bytes = 32): string {
 export function hashToken(raw: string): string {
   return createHash('sha256').update(raw).digest('hex');
 }
+
+export function createId(): string {
+  return randomBytes(12).toString('base64url');
+}
