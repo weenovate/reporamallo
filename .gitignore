@@ -1,0 +1,35 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+
+# Storage de uploads en dev
+storage/
+!storage/.gitkeep
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# tsbuildinfo
+*.tsbuildinfo
+next-env.d.ts

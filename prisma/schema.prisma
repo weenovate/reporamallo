@@ -1,0 +1,168 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  GESTOR
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+  LOGIN
+  LOGOUT
+  RESET_REQUEST
+  RESET_COMPLETE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  firstName    String
+  lastName     String
+  passwordHash String   @db.Text
+  role         Role     @default(GESTOR)
+  createdById  String?
+  createdBy    User?    @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers User[]   @relation("UserCreatedBy")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  sessions      Session[]
+  resetTokens   PasswordResetToken[]
+  uploadedDocs  Document[] @relation("DocUploadedBy")
+  updatedDocs   Document[] @relation("DocUpdatedBy")
+
+  @@index([deletedAt])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  tokenHash String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Entity {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  deletedAt  DateTime?
+  categories Category[]
+  documents  Document[]
+
+  @@index([deletedAt])
+}
+
+model Category {
+  id         String     @id @default(cuid())
+  name       String
+  entityId   String
+  entity     Entity     @relation(fields: [entityId], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  deletedAt  DateTime?
+  documents  Document[]
+
+  @@unique([entityId, name])
+  @@index([deletedAt])
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  title         String   @db.VarChar(500)
+  extract       String   @db.Text
+  contentText   String   @db.LongText
+  contentDate   DateTime
+  fileName      String   @db.VarChar(500)
+  fileMime      String   @db.VarChar(150)
+  fileSize      Int
+  fileChecksum  String   @db.VarChar(128)
+  storageKey    String   @db.VarChar(500)
+
+  entityId      String
+  entity        Entity   @relation(fields: [entityId], references: [id])
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+
+  uploadedById  String
+  uploadedBy    User     @relation("DocUploadedBy", fields: [uploadedById], references: [id])
+  updatedById   String?
+  updatedBy     User?    @relation("DocUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  tags          DocumentTag[]
+
+  @@index([deletedAt])
+  @@index([entityId])
+  @@index([categoryId])
+  @@index([contentDate])
+  @@fulltext([title, extract, contentText])
+}
+
+model Tag {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  createdAt DateTime      @default(now())
+  documents DocumentTag[]
+}
+
+model DocumentTag {
+  documentId String
+  tagId      String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, tagId])
+  @@index([tagId])
+}
+
+model AuditLog {
+  id         BigInt      @id @default(autoincrement())
+  actorId    String?
+  action     AuditAction
+  entityType String      @db.VarChar(50)
+  entityId   String      @db.VarChar(100)
+  before     Json?
+  after      Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model AppSetting {
+  key   String @id @db.VarChar(100)
+  value String @db.Text
+}
