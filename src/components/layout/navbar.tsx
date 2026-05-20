@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FileText, FolderTree, Settings, Users, History } from 'lucide-react';
+import { FileText, FolderTree, Settings, Users, History, Trash2 } from 'lucide-react';
 import type { SessionUser } from '@/lib/auth/session';
 import { ThemeSwitcher } from '@/components/theme/theme-switcher';
 import { UserMenu } from '@/components/layout/user-menu';
@@ -23,6 +23,9 @@ export function Navbar({ user }: { user: SessionUser }) {
               <>
                 <NavLink href="/usuarios" icon={<Users className="h-4 w-4" />}>
                   Usuarios
+                </NavLink>
+                <NavLink href="/papelera" icon={<Trash2 className="h-4 w-4" />}>
+                  Papelera
                 </NavLink>
                 <NavLink href="/auditoria" icon={<History className="h-4 w-4" />}>
                   Auditoría

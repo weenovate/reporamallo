@@ -9,6 +9,7 @@ const PROTECTED_PREFIXES = [
   '/perfil',
   '/configuracion',
   '/auditoria',
+  '/papelera',
 ];
 const PUBLIC_AUTH_PATHS = ['/login', '/forgot-password', '/reset-password'];
 
